@@ -59,6 +59,15 @@ end
 #
 # Packages
 #
+execute "apt-get update" do
+  ignore_failure true
+  action :nothing
+  only_if do
+    ::File.exists?('/var/lib/apt/periodic/update-success-stamp') &&
+    ::File.mtime('/var/lib/apt/periodic/update-success-stamp') < Time.now - 86400
+  end
+end.run_action(:run)
+
 %w{
   ack-grep
   byobu
@@ -114,7 +123,7 @@ end
 
 
 #
-# APT
+# Apt
 #
 file "/etc/apt/apt.conf.d/00architectures" do
   owner "root"
@@ -126,7 +135,7 @@ end
 
 
 #
-# motd message
+# Motd message
 #
 %w{
   10-help-text
@@ -224,20 +233,26 @@ if node[:ubuntu_server][:ufw][:enable]
     group "root"
     mode 0644
     action :create
+#    notifies :reload, "firewall[ufw]"
   end
 
   template "/etc/ufw/before.rules" do
     source "ufw-before.rules.erb"
+    owner "root"
+    group "root"
     mode 0640
     action :create
+#    notifies :reload, "firewall[ufw]"
   end
 
-#  template "/etc/ufw/sysctl.conf" do
-#    source "sysctl.conf.erb"
-#    mode 0644
-#    action :create
+  template "/etc/ufw/sysctl.conf" do
+    source "sysctl.conf.erb"
+    owner "root"
+    group "root"
+    mode 0644
+    action :create
 #    notifies :reload, "firewall[ufw]", :delayed
-#  end
+  end
 end
 
 
@@ -264,7 +279,7 @@ end
 
 template "/etc/cron.d/sysstat" do
   source "cron-sysstat.erb"
-  mode 0664
+  mode 0600
   action :create
   notifies :reload, "service[sysstat]", :delayed
 end
@@ -334,7 +349,7 @@ end
 
 
 #
-# Pysical Host
+# Physical Host
 #
 cookbook_file "/usr/local/script/generante_persistent_net.sh" do
   source "generate_persistent_net.sh"

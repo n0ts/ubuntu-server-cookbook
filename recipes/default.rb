@@ -77,6 +77,7 @@ end.run_action(:run)
   ethtool
   dstat
   git
+  htop
   iotop
   keychain
   landscape-common
@@ -224,6 +225,12 @@ end
 
 
 #
+# Logrotate
+#
+include_recipe "logrotate::default"
+
+
+#
 # ufw
 #
 if node[:ubuntu_server][:ufw][:enable]
@@ -264,7 +271,7 @@ package "sysstat" do
 end
 
 template "/etc/default/sysstat" do
-  source "sysstat.erb"
+  source "sysstat-default.erb"
   mode 0664
   action :create
   notifies :reload, "service[sysstat]", :delayed
@@ -278,7 +285,7 @@ template "/etc/sysstat/sysstat" do
 end
 
 template "/etc/cron.d/sysstat" do
-  source "cron-sysstat.erb"
+  source "sysstat-cron.erb"
   mode 0600
   action :create
   notifies :reload, "service[sysstat]", :delayed

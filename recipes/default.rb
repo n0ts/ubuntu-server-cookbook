@@ -179,7 +179,28 @@ end
 
 
 #
-# sysctl
+# Scripts
+#
+file "/usr/local/sbin/fix_permission_null.sh" do
+  content <<-EOH
+#!/bin/sh
+
+while [ true ]; do
+  sleep 1
+  if [ `stat --format=%A /dev/null` != "crw-rw-rw-" ]; then
+    /sbin/udevadm trigger --sysname-match=null
+  fi
+done
+EOH
+  owner "root"
+  group "root"
+  mode 0755
+  action :create
+end
+
+
+#
+# Sysctl
 #
 unless node[:ubuntu_server][:sysctl][:params].empty?
   execute "add-sysctl" do
@@ -201,7 +222,18 @@ end
 #
 template "/etc/rc.local" do
   source "rc.local.erb"
+  owner "root"
+  group "root"
   mode 0755
+  action :create
+  notifies :run, "execute[rc-local]"
+end
+
+execute "rc-local" do
+  command "sh /etc/rc.local"
+  user "root"
+  action :nothing
+  not_if { node[:ubuntu_server][:rc_local_params].empty? }
 end
 
 

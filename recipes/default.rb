@@ -327,6 +327,37 @@ service "sysstat" do
   action [:enable, :start]
 end
 
+file "/usr/local/etc/fix-sar-log.sh" do
+  content <<-EOH
+#!/bin/sh
+
+SAR_LOG=/tmp/sar.log
+
+sar 2> $SAR_LOG > /dev/null
+SAR_RESULT=`cat $SAR_LOG`
+if [ -n "$SAR_RESULT" ]; then
+    SAR_FILE=`echo $SAR_RESULT | cut -d ":" -f 2 | tr -d " "`
+    if [ -f "$SAR_FILE" ]; then
+        rm -f $SAR_FILE
+    fi
+fi
+
+rm -f $SAR_LOG
+EOH
+  owner "root"
+  group "root"
+  mode 0755
+  action :create
+end
+
+cron "fix-sar-log" do
+  command "/usr/local/etc/fix-sar-log.sh"
+  hour "0"
+  minute "1"
+  user "root"
+  action :create
+end
+
 
 #
 # KVM host
